@@ -53,3 +53,54 @@ export const revenueData = [
   { month: "Jan", revenue: 550000, collected: 520000 },
   { month: "Feb", revenue: 680000, collected: 610000 },
 ];
+
+export const invoices = [
+  { id: "INV-2026-001", company: "TravelMax India", amount: 180000, issueDate: "2026-01-05", dueDate: "2026-02-05", status: "paid" as const, product: "Tour CRM" },
+  { id: "INV-2026-002", company: "GoTrip Solutions", amount: 264000, issueDate: "2026-01-10", dueDate: "2026-02-10", status: "paid" as const, product: "Travel CRM" },
+  { id: "INV-2026-003", company: "Wanderlust Holidays", amount: 144000, issueDate: "2026-01-15", dueDate: "2026-02-15", status: "overdue" as const, product: "Tour CRM" },
+  { id: "INV-2026-004", company: "BlueSky Tours", amount: 300000, issueDate: "2026-02-01", dueDate: "2026-03-01", status: "pending" as const, product: "Tour CRM" },
+  { id: "INV-2026-005", company: "Safari Adventures", amount: 108000, issueDate: "2026-02-10", dueDate: "2026-03-10", status: "pending" as const, product: "Tour CRM" },
+  { id: "INV-2026-006", company: "Horizon Travels", amount: 192000, issueDate: "2026-02-15", dueDate: "2026-03-15", status: "draft" as const, product: "Travel CRM" },
+  { id: "INV-2026-007", company: "Voyager Travel Co", amount: 90000, issueDate: "2025-10-01", dueDate: "2025-11-01", status: "overdue" as const, product: "Travel CRM" },
+  { id: "INV-2026-008", company: "Nomad Experiences", amount: 72000, issueDate: "2025-07-01", dueDate: "2025-08-01", status: "cancelled" as const, product: "Tour CRM" },
+];
+
+export const tickets = [
+  { id: "TKT-001", company: "TravelMax India", subject: "Unable to generate booking PDF", priority: "high" as const, status: "open" as const, assignee: "Ravi K.", createdAt: "2026-02-28", updatedAt: "2026-03-01" },
+  { id: "TKT-002", company: "GoTrip Solutions", subject: "Dashboard loading slow on mobile", priority: "medium" as const, status: "in_progress" as const, assignee: "Priya S.", createdAt: "2026-02-27", updatedAt: "2026-03-01" },
+  { id: "TKT-003", company: "Wanderlust Holidays", subject: "Invoice email not delivered", priority: "high" as const, status: "open" as const, assignee: "Unassigned", createdAt: "2026-03-01", updatedAt: "2026-03-01" },
+  { id: "TKT-004", company: "BlueSky Tours", subject: "Custom fields not saving properly", priority: "low" as const, status: "resolved" as const, assignee: "Amit J.", createdAt: "2026-02-20", updatedAt: "2026-02-25" },
+  { id: "TKT-005", company: "Safari Adventures", subject: "Need API access for external integration", priority: "medium" as const, status: "open" as const, assignee: "Ravi K.", createdAt: "2026-02-26", updatedAt: "2026-02-28" },
+  { id: "TKT-006", company: "Horizon Travels", subject: "Bulk import failing with CSV file", priority: "critical" as const, status: "in_progress" as const, assignee: "Priya S.", createdAt: "2026-03-01", updatedAt: "2026-03-02" },
+  { id: "TKT-007", company: "Nomad Experiences", subject: "Account reactivation request", priority: "low" as const, status: "closed" as const, assignee: "Amit J.", createdAt: "2026-02-15", updatedAt: "2026-02-18" },
+];
+
+export const renewals = [
+  { id: "REN-001", company: "Wanderlust Holidays", product: "Tour CRM", plan: "1 Year", seats: 8, expiryDate: "2026-03-10", daysLeft: 8, amount: 144000, status: "urgent" as const },
+  { id: "REN-002", company: "Horizon Travels", product: "Travel CRM", plan: "1 Year", seats: 10, expiryDate: "2026-03-22", daysLeft: 20, amount: 192000, status: "upcoming" as const },
+  { id: "REN-003", company: "GoTrip Solutions", product: "Travel CRM", plan: "1 Year", seats: 15, expiryDate: "2026-08-20", daysLeft: 171, amount: 264000, status: "scheduled" as const },
+  { id: "REN-004", company: "BlueSky Tours", product: "Tour CRM", plan: "1 Year", seats: 20, expiryDate: "2026-09-25", daysLeft: 207, amount: 300000, status: "scheduled" as const },
+  { id: "REN-005", company: "TravelMax India", product: "Tour CRM", plan: "2 Year", seats: 10, expiryDate: "2026-12-31", daysLeft: 304, amount: 360000, status: "scheduled" as const },
+  { id: "REN-006", company: "Voyager Travel Co", product: "Travel CRM", plan: "1 Year", seats: 5, expiryDate: "2025-11-30", daysLeft: -92, amount: 90000, status: "lapsed" as const },
+];
+
+export const reportData = {
+  revenueByProduct: [
+    { product: "Tour CRM", revenue: 896000, clients: 5 },
+    { product: "Travel CRM", revenue: 546000, clients: 3 },
+  ],
+  monthlyGrowth: [
+    { month: "Sep", clients: 125, mrr: 980000 },
+    { month: "Oct", clients: 130, mrr: 1040000 },
+    { month: "Nov", clients: 134, mrr: 1100000 },
+    { month: "Dec", clients: 138, mrr: 1180000 },
+    { month: "Jan", clients: 140, mrr: 1220000 },
+    { month: "Feb", clients: 142, mrr: 1240000 },
+  ],
+  ticketsByPriority: [
+    { name: "Critical", value: 3, fill: "hsl(0, 72%, 51%)" },
+    { name: "High", value: 8, fill: "hsl(38, 92%, 50%)" },
+    { name: "Medium", value: 12, fill: "hsl(199, 89%, 48%)" },
+    { name: "Low", value: 5, fill: "hsl(152, 69%, 41%)" },
+  ],
+};
