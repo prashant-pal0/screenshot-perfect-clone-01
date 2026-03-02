@@ -25,6 +25,7 @@ const navItems = [
   { to: "/tickets", icon: LifeBuoy, label: "Support" },
   { to: "/renewals", icon: RefreshCw, label: "Renewals" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
+  { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
 const AppSidebar = () => {

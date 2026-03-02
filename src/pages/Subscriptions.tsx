@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { subscriptions } from "@/data/mockData";
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/table";
 
 const Subscriptions = () => {
+  const navigate = useNavigate();
   return (
     <>
       <AppHeader title="Subscriptions" subtitle={`${subscriptions.length} subscriptions`} />
@@ -39,7 +41,7 @@ const Subscriptions = () => {
             </TableHeader>
             <TableBody>
               {subscriptions.map((sub) => (
-                <TableRow key={sub.id} className="cursor-pointer">
+                <TableRow key={sub.id} className="cursor-pointer" onClick={() => navigate(`/subscriptions/${sub.id}`)}>
                   <TableCell className="text-sm font-mono text-muted-foreground">{sub.id}</TableCell>
                   <TableCell className="text-sm font-medium">{sub.company}</TableCell>
                   <TableCell>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { companies } from "@/data/mockData";
@@ -16,6 +17,7 @@ import {
 
 const Clients = () => {
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   const filtered = companies.filter(
     (c) =>
@@ -66,7 +68,7 @@ const Clients = () => {
             </TableHeader>
             <TableBody>
               {filtered.map((company) => (
-                <TableRow key={company.id} className="cursor-pointer">
+                <TableRow key={company.id} className="cursor-pointer" onClick={() => navigate(`/clients/${company.id}`)}>
                   <TableCell className="font-medium text-sm">{company.name}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{company.city}</TableCell>
                   <TableCell>
