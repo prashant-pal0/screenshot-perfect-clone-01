@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { pipelineDeals, pipelineStages } from "@/data/mockData";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 const Pipeline = () => {
+  const navigate = useNavigate();
   const totalValue = pipelineDeals.reduce((acc, d) => acc + d.value, 0);
 
   return (
@@ -38,6 +40,7 @@ const Pipeline = () => {
                   {deals.map((deal) => (
                     <div
                       key={deal.id}
+                      onClick={() => navigate(`/pipeline/${deal.id}`)}
                       className="bg-card rounded-lg border border-border p-3 space-y-2 cursor-pointer hover:shadow-sm transition-shadow"
                     >
                       <div className="flex items-start justify-between">

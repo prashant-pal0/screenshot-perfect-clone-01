@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { tickets } from "@/data/mockData";
@@ -19,6 +20,7 @@ const priorityColors: Record<string, string> = {
 
 const Tickets = () => {
   const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
   const filtered = tickets.filter(
     (t) =>
@@ -74,7 +76,7 @@ const Tickets = () => {
             </TableHeader>
             <TableBody>
               {filtered.map((t) => (
-                <TableRow key={t.id} className="cursor-pointer">
+                <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(`/tickets/${t.id}`)}>
                   <TableCell className="text-sm font-mono text-muted-foreground">{t.id}</TableCell>
                   <TableCell className="text-sm font-medium max-w-[300px] truncate">{t.subject}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{t.company}</TableCell>
