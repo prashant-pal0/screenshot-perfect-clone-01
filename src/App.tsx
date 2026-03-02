@@ -8,7 +8,10 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Subscriptions from "./pages/Subscriptions";
 import Pipeline from "./pages/Pipeline";
-import ComingSoon from "./pages/ComingSoon";
+import Invoices from "./pages/Invoices";
+import Tickets from "./pages/Tickets";
+import Renewals from "./pages/Renewals";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,10 +28,10 @@ const App = () => (
             <Route path="/clients" element={<Clients />} />
             <Route path="/subscriptions" element={<Subscriptions />} />
             <Route path="/pipeline" element={<Pipeline />} />
-            <Route path="/invoices" element={<ComingSoon />} />
-            <Route path="/tickets" element={<ComingSoon />} />
-            <Route path="/renewals" element={<ComingSoon />} />
-            <Route path="/reports" element={<ComingSoon />} />
+            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/tickets" element={<Tickets />} />
+            <Route path="/renewals" element={<Renewals />} />
+            <Route path="/reports" element={<Reports />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
