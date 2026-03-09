@@ -18,6 +18,7 @@ import TicketDetail from "./pages/TicketDetail";
 import Renewals from "./pages/Renewals";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/tickets/:id" element={<TicketDetail />} />
             <Route path="/renewals" element={<Renewals />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/users" element={<Users />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
