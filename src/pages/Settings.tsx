@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { User, Users, CreditCard, Bell, Shield, Palette, Save } from "lucide-react";
+import { User, CreditCard, Bell, Shield, Palette, Save } from "lucide-react";
 
 const Settings = () => {
   const [saved, setSaved] = useState(false);
@@ -24,9 +24,8 @@ const Settings = () => {
       <AppHeader title="Settings" subtitle="Manage your CRM configuration" />
       <div className="flex-1 overflow-y-auto p-6">
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-5">
             <TabsTrigger value="profile"><User className="w-3.5 h-3.5 mr-1.5 hidden sm:inline" />Profile</TabsTrigger>
-            <TabsTrigger value="team"><Users className="w-3.5 h-3.5 mr-1.5 hidden sm:inline" />Team</TabsTrigger>
             <TabsTrigger value="billing"><CreditCard className="w-3.5 h-3.5 mr-1.5 hidden sm:inline" />Billing</TabsTrigger>
             <TabsTrigger value="notifications"><Bell className="w-3.5 h-3.5 mr-1.5 hidden sm:inline" />Alerts</TabsTrigger>
             <TabsTrigger value="security"><Shield className="w-3.5 h-3.5 mr-1.5 hidden sm:inline" />Security</TabsTrigger>
@@ -58,38 +57,8 @@ const Settings = () => {
             </div>
           </TabsContent>
 
-          {/* Team Tab */}
-          <TabsContent value="team">
-            <div className="bg-card rounded-lg border border-border p-6 max-w-2xl space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-card-foreground">Team Members</h3>
-                <Button size="sm">Invite Member</Button>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "Arjun Kumar", email: "arjun@mastercrm.in", role: "Super Admin", initials: "AK" },
-                  { name: "Ravi Krishnan", email: "ravi@mastercrm.in", role: "Sales Manager", initials: "RK" },
-                  { name: "Priya Sharma", email: "priya@mastercrm.in", role: "Support Agent", initials: "PS" },
-                  { name: "Amit Joshi", email: "amit@mastercrm.in", role: "Support Agent", initials: "AJ" },
-                  { name: "Neha Gupta", email: "neha@mastercrm.in", role: "Sales Rep", initials: "NG" },
-                ].map((member) => (
-                  <div key={member.email} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9"><AvatarFallback className="bg-secondary text-secondary-foreground text-xs">{member.initials}</AvatarFallback></Avatar>
-                      <div>
-                        <p className="text-sm font-medium text-card-foreground">{member.name}</p>
-                        <p className="text-xs text-muted-foreground">{member.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs bg-secondary px-2 py-0.5 rounded font-medium">{member.role}</span>
-                      <Button variant="ghost" size="sm" className="text-xs">Edit</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
+
+
 
           {/* Billing Tab */}
           <TabsContent value="billing">

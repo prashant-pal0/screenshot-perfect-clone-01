@@ -22,30 +22,34 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, MoreHorizontal, Shield, Edit, Trash2, KeyRound, UserCheck, Settings2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const PERMISSIONS = [
-  "View Clients", "Add/Edit Clients", "Delete Clients",
-  "View Invoices", "Create Invoices", "Edit Invoices",
-  "View Pipeline", "Manage Pipeline",
-  "View Tickets", "Manage Tickets",
-  "Manage Users", "View Reports", "System Settings"
+const MODULES = [
+  "Dashboard", "Clients", "Invoices", "Pipeline", "Tickets",
+  "Subscriptions", "Renewals", "Reports", "Users", "Settings"
 ] as const;
 
-type Permission = typeof PERMISSIONS[number];
+const ACTIONS = ["View", "Create", "Edit", "Delete"] as const;
+
+type Module = typeof MODULES[number];
+type Action = typeof ACTIONS[number];
+type PermissionKey = `${Module}:${Action}`;
 
 interface Role {
   id: string;
   name: string;
+  description: string;
   color: string;
-  permissions: Permission[];
+  permissions: PermissionKey[];
 }
 
+const allPerms = (): PermissionKey[] => MODULES.flatMap(m => ACTIONS.map(a => `${m}:${a}` as PermissionKey));
+
 const initialRoles: Role[] = [
-  { id: "1", name: "Super Admin", color: "bg-destructive/10 text-destructive border-destructive/30", permissions: [...PERMISSIONS] },
-  { id: "2", name: "Sales Manager", color: "bg-primary/10 text-primary border-primary/30", permissions: ["View Clients", "Add/Edit Clients", "View Invoices", "View Pipeline", "Manage Pipeline", "View Reports"] },
-  { id: "3", name: "Sales Rep", color: "bg-info/10 text-info border-info/30", permissions: ["View Clients", "Add/Edit Clients", "View Pipeline"] },
-  { id: "4", name: "Finance", color: "bg-warning/10 text-warning border-warning/30", permissions: ["View Clients", "View Invoices", "Create Invoices", "Edit Invoices", "View Reports"] },
-  { id: "5", name: "Support Manager", color: "bg-success/10 text-success border-success/30", permissions: ["View Clients", "View Tickets", "Manage Tickets", "View Reports"] },
-  { id: "6", name: "Support Agent", color: "bg-secondary text-secondary-foreground border-border", permissions: ["View Clients", "View Tickets", "Manage Tickets"] },
+  { id: "1", name: "Super Admin", description: "Full system access", color: "bg-destructive/10 text-destructive border-destructive/30", permissions: allPerms() },
+  { id: "2", name: "Sales Manager", description: "Manages sales team & pipeline", color: "bg-primary/10 text-primary border-primary/30", permissions: ["Dashboard:View", "Clients:View", "Clients:Create", "Clients:Edit", "Invoices:View", "Pipeline:View", "Pipeline:Create", "Pipeline:Edit", "Reports:View"] },
+  { id: "3", name: "Sales Rep", description: "Handles leads & clients", color: "bg-info/10 text-info border-info/30", permissions: ["Dashboard:View", "Clients:View", "Clients:Create", "Clients:Edit", "Pipeline:View", "Pipeline:Create", "Pipeline:Edit"] },
+  { id: "4", name: "Finance", description: "Invoice & billing management", color: "bg-warning/10 text-warning border-warning/30", permissions: ["Dashboard:View", "Clients:View", "Invoices:View", "Invoices:Create", "Invoices:Edit", "Subscriptions:View", "Renewals:View", "Reports:View"] },
+  { id: "5", name: "Support Manager", description: "Manages support team", color: "bg-success/10 text-success border-success/30", permissions: ["Dashboard:View", "Clients:View", "Tickets:View", "Tickets:Create", "Tickets:Edit", "Tickets:Delete", "Reports:View"] },
+  { id: "6", name: "Support Agent", description: "Handles customer tickets", color: "bg-secondary text-secondary-foreground border-border", permissions: ["Dashboard:View", "Clients:View", "Tickets:View", "Tickets:Create", "Tickets:Edit"] },
 ];
 
 const colorOptions = [
@@ -78,7 +82,7 @@ const initialUsers: User[] = [
 ];
 
 const emptyUserForm = { name: "", email: "", roleId: "3", status: "active" as "active" | "inactive" };
-const emptyRoleForm = { name: "", color: colorOptions[0].value, permissions: [] as Permission[] };
+const emptyRoleForm = { name: "", description: "", color: colorOptions[0].value, permissions: [] as PermissionKey[] };
 
 const Users = () => {
   const [roles, setRoles] = useState<Role[]>(initialRoles);
@@ -162,7 +166,7 @@ const Users = () => {
 
   const openEditRole = (r: Role) => {
     setEditRole(r);
-    setRoleForm({ name: r.name, color: r.color, permissions: [...r.permissions] });
+    setRoleForm({ name: r.name, description: r.description, color: r.color, permissions: [...r.permissions] });
     setRoleDialogOpen(true);
   };
 
@@ -175,7 +179,7 @@ const Users = () => {
       setRoles((prev) => prev.map((r) => r.id === editRole.id ? { ...r, ...roleForm } : r));
       toast({ title: "Role updated", description: `${roleForm.name} has been saved.` });
     } else {
-      const newRole: Role = { id: Date.now().toString(), ...roleForm };
+      const newRole: Role = { id: Date.now().toString(), name: roleForm.name, description: roleForm.description, color: roleForm.color, permissions: roleForm.permissions };
       setRoles((prev) => [...prev, newRole]);
       toast({ title: "Role created", description: `${roleForm.name} has been added.` });
     }
@@ -195,12 +199,23 @@ const Users = () => {
     setDeleteRoleTarget(null);
   };
 
-  const togglePermission = (perm: Permission) => {
+  const togglePermission = (perm: PermissionKey) => {
     setRoleForm(prev => ({
       ...prev,
       permissions: prev.permissions.includes(perm)
         ? prev.permissions.filter(p => p !== perm)
         : [...prev.permissions, perm]
+    }));
+  };
+
+  const toggleModuleAll = (mod: Module) => {
+    const modPerms = ACTIONS.map(a => `${mod}:${a}` as PermissionKey);
+    const allChecked = modPerms.every(p => roleForm.permissions.includes(p));
+    setRoleForm(prev => ({
+      ...prev,
+      permissions: allChecked
+        ? prev.permissions.filter(p => !modPerms.includes(p))
+        : [...new Set([...prev.permissions, ...modPerms])]
     }));
   };
 
