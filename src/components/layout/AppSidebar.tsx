@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +26,27 @@ const navItems = [
   { to: "/tickets", icon: LifeBuoy, label: "Support" },
   { to: "/renewals", icon: RefreshCw, label: "Renewals" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
+];
+
+const bottomNavItems = [
+  { to: "/users", icon: Users, label: "Users & Roles" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
 const AppSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+
+  const isActive = (to: string) =>
+    to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+
+  const navClass = (to: string) =>
+    cn(
+      "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+      isActive(to)
+        ? "bg-sidebar-accent text-sidebar-primary"
+        : "text-sidebar-muted hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50"
+    );
 
   return (
     <aside
@@ -51,30 +67,25 @@ const AppSidebar = () => {
         )}
       </div>
 
-      {/* Nav */}
+      {/* Main Nav */}
       <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive =
-            item.to === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(item.to);
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-primary"
-                  : "text-sidebar-muted hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50"
-              )}
-            >
-              <item.icon className="w-4 h-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </NavLink>
-          );
-        })}
+        {navItems.map((item) => (
+          <NavLink key={item.to} to={item.to} className={navClass(item.to)}>
+            <item.icon className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>{item.label}</span>}
+          </NavLink>
+        ))}
       </nav>
+
+      {/* Bottom Nav: Users + Settings */}
+      <div className="px-2 py-2 border-t border-sidebar-border space-y-0.5">
+        {bottomNavItems.map((item) => (
+          <NavLink key={item.to} to={item.to} className={navClass(item.to)}>
+            <item.icon className="w-4 h-4 shrink-0" />
+            {!collapsed && <span>{item.label}</span>}
+          </NavLink>
+        ))}
+      </div>
 
       {/* Collapse toggle */}
       <div className="px-2 py-3 border-t border-sidebar-border shrink-0">
