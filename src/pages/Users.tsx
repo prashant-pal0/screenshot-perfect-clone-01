@@ -393,21 +393,27 @@ const Users = () => {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left font-semibold text-muted-foreground py-2 pr-4">Permission</th>
-                      {roles.map((r) => <th key={r.id} className="text-center font-semibold text-muted-foreground py-2 px-2 whitespace-nowrap">{r.name}</th>)}
+                      <th className="text-left font-semibold text-muted-foreground py-2 pr-4">Module</th>
+                      {ACTIONS.map(a => <th key={a} className="text-center font-semibold text-muted-foreground py-2 px-2">{a}</th>)}
                     </tr>
                   </thead>
                   <tbody>
-                    {PERMISSIONS.map((perm) => (
-                      <tr key={perm} className="border-b border-border/50 last:border-0">
-                        <td className="py-2 pr-4 font-medium text-card-foreground">{perm}</td>
-                        {roles.map((r) => (
-                          <td key={r.id} className="text-center py-2 px-2">
-                            {r.permissions.includes(perm)
-                              ? <span className="text-success font-bold">✓</span>
-                              : <span className="text-muted-foreground/40">—</span>}
-                          </td>
-                        ))}
+                    {MODULES.map((mod) => (
+                      <tr key={mod} className="border-b border-border/50 last:border-0">
+                        <td className="py-2 pr-4 font-medium text-card-foreground">{mod}</td>
+                        {ACTIONS.map((action) => {
+                          const key = `${mod}:${action}` as PermissionKey;
+                          const hasAny = roles.some(r => r.permissions.includes(key));
+                          return (
+                            <td key={action} className="text-center py-2 px-2">
+                              <div className="flex justify-center gap-1">
+                                {roles.map(r => (
+                                  <span key={r.id} title={r.name} className={`w-2 h-2 rounded-full ${r.permissions.includes(key) ? "bg-success" : "bg-muted"}`} />
+                                ))}
+                              </div>
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>
@@ -485,40 +491,45 @@ const Users = () => {
             <DialogTitle>{editRole ? "Edit Role" : "Create New Role"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Role Name</Label>
-              <Input placeholder="e.g. Marketing Manager" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Role Name</Label>
+                <Input placeholder="e.g. Marketing Manager" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input placeholder="Role for Marketing Manager" value={roleForm.description} onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })} />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Badge Color</Label>
-              <Select value={roleForm.color} onValueChange={(v) => setRoleForm({ ...roleForm, color: v })}>
-                <SelectTrigger>
-                  <SelectValue>
-                    <Badge variant="outline" className={roleForm.color}>Preview</Badge>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {colorOptions.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      <Badge variant="outline" className={c.value}>{c.label}</Badge>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Permissions</Label>
-              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 border border-border rounded-md">
-                {PERMISSIONS.map((perm) => (
-                  <div key={perm} className="flex items-center gap-2">
-                    <Checkbox
-                      id={perm}
-                      checked={roleForm.permissions.includes(perm)}
-                      onCheckedChange={() => togglePermission(perm)}
-                    />
-                    <label htmlFor={perm} className="text-xs text-card-foreground cursor-pointer">{perm}</label>
-                  </div>
-                ))}
+              <Label className="text-sm font-semibold">Permissions</Label>
+              <div className="border border-border rounded-md overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-muted/50 border-b border-border">
+                      <th className="text-left font-semibold text-muted-foreground py-2.5 px-3">Module</th>
+                      {ACTIONS.map(a => <th key={a} className="text-center font-semibold text-muted-foreground py-2.5 px-3">{a}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MODULES.map((mod) => (
+                      <tr key={mod} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
+                        <td className="py-2.5 px-3 font-medium text-card-foreground">{mod}</td>
+                        {ACTIONS.map((action) => {
+                          const key = `${mod}:${action}` as PermissionKey;
+                          return (
+                            <td key={action} className="text-center py-2.5 px-3">
+                              <Checkbox
+                                checked={roleForm.permissions.includes(key)}
+                                onCheckedChange={() => togglePermission(key)}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
