@@ -486,7 +486,7 @@ const Users = () => {
 
       {/* Add/Edit Role Dialog */}
       <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editRole ? "Edit Role" : "Create New Role"}</DialogTitle>
           </DialogHeader>
