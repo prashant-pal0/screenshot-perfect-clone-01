@@ -19,6 +19,9 @@ import Renewals from "./pages/Renewals";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import Users from "./pages/Users";
+import LeadData from "./pages/LeadScraper";
+import ScrapedLists from "./pages/ScrapedLists";
+import ScrapedListDetail from "./pages/ScrapedListDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +48,9 @@ const App = () => (
             <Route path="/renewals" element={<Renewals />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/lead-scraper" element={<LeadData />} />
+            <Route path="/scraped-lists" element={<ScrapedLists />} />
+            <Route path="/scraped-lists/:id" element={<ScrapedListDetail />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />

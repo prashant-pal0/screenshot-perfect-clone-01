@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Zap,
   Users,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +27,11 @@ const navItems = [
   { to: "/tickets", icon: LifeBuoy, label: "Support" },
   { to: "/renewals", icon: RefreshCw, label: "Renewals" },
   { to: "/reports", icon: BarChart3, label: "Reports" },
+  { to: "/lead-scraper", icon: Database, label: "Lead Data" },
 ];
 
 const bottomNavItems = [
+  { to: "/scraped-lists", icon: Database, label: "Saved Scrapes" },
   { to: "/users", icon: Users, label: "Users & Roles" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, MasterUser, MasterRole } from "@/lib/api";
 import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +21,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, MoreHorizontal, Shield, Edit, Trash2, KeyRound, UserCheck, Settings2 } from "lucide-react";
+import { Search, Plus, MoreHorizontal, Shield, Edit, Trash2, KeyRound, UserCheck, Settings2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const MODULES = [
@@ -72,43 +74,95 @@ interface User {
 }
 
 const initialUsers: User[] = [
-  { id: "1", name: "Arjun Kumar",   email: "arjun@mastercrm.in",  roleId: "1", status: "active",   lastLogin: "Just now",        initials: "AK" },
-  { id: "2", name: "Ravi Krishnan", email: "ravi@mastercrm.in",   roleId: "2", status: "active",   lastLogin: "2 hours ago",     initials: "RK" },
-  { id: "3", name: "Priya Sharma",  email: "priya@mastercrm.in",  roleId: "5", status: "active",   lastLogin: "Yesterday",       initials: "PS" },
-  { id: "4", name: "Amit Joshi",    email: "amit@mastercrm.in",   roleId: "6", status: "active",   lastLogin: "Yesterday",       initials: "AJ" },
-  { id: "5", name: "Neha Gupta",    email: "neha@mastercrm.in",   roleId: "3", status: "active",   lastLogin: "3 days ago",      initials: "NG" },
-  { id: "6", name: "Vijay Patel",   email: "vijay@mastercrm.in",  roleId: "4", status: "active",   lastLogin: "1 week ago",      initials: "VP" },
-  { id: "7", name: "Sunita Rao",    email: "sunita@mastercrm.in", roleId: "3", status: "inactive", lastLogin: "2 weeks ago",     initials: "SR" },
+  { id: "1", name: "Arjun Kumar", email: "arjun@mastercrm.in", roleId: "1", status: "active", lastLogin: "Just now", initials: "AK" },
+  { id: "2", name: "Ravi Krishnan", email: "ravi@mastercrm.in", roleId: "2", status: "active", lastLogin: "2 hours ago", initials: "RK" },
+  { id: "3", name: "Priya Sharma", email: "priya@mastercrm.in", roleId: "5", status: "active", lastLogin: "Yesterday", initials: "PS" },
+  { id: "4", name: "Amit Joshi", email: "amit@mastercrm.in", roleId: "6", status: "active", lastLogin: "Yesterday", initials: "AJ" },
+  { id: "5", name: "Neha Gupta", email: "neha@mastercrm.in", roleId: "3", status: "active", lastLogin: "3 days ago", initials: "NG" },
+  { id: "6", name: "Vijay Patel", email: "vijay@mastercrm.in", roleId: "4", status: "active", lastLogin: "1 week ago", initials: "VP" },
+  { id: "7", name: "Sunita Rao", email: "sunita@mastercrm.in", roleId: "3", status: "inactive", lastLogin: "2 weeks ago", initials: "SR" },
 ];
 
-const emptyUserForm = { name: "", email: "", roleId: "3", status: "active" as "active" | "inactive" };
+const emptyUserForm = { name: "", email: "", roleId: "", status: "active" as "active" | "inactive", password: "" };
 const emptyRoleForm = { name: "", description: "", color: colorOptions[0].value, permissions: [] as PermissionKey[] };
 
 const Users = () => {
-  const [roles, setRoles] = useState<Role[]>(initialRoles);
-  const [users, setUsers] = useState<User[]>(initialUsers);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [userDialogOpen, setUserDialogOpen] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editUser, setEditUser] = useState<MasterUser | null>(null);
   const [userForm, setUserForm] = useState(emptyUserForm);
-  const [deleteUserTarget, setDeleteUserTarget] = useState<User | null>(null);
-  
-  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
-  const [editRole, setEditRole] = useState<Role | null>(null);
-  const [roleForm, setRoleForm] = useState(emptyRoleForm);
-  const [deleteRoleTarget, setDeleteRoleTarget] = useState<Role | null>(null);
-  
-  const { toast } = useToast();
+  const [deleteUserTarget, setDeleteUserTarget] = useState<MasterUser | null>(null);
 
-  const getRoleById = (id: string) => roles.find(r => r.id === id);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [editRole, setEditRole] = useState<MasterRole | null>(null);
+  const [roleForm, setRoleForm] = useState(emptyRoleForm);
+  const [deleteRoleTarget, setDeleteRoleTarget] = useState<MasterRole | null>(null);
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: roles = [], isLoading: rolesLoading } = useQuery({
+    queryKey: ['roles'],
+    queryFn: api.getMasterRoles
+  });
+
+  const { data: users = [], isLoading: usersLoading } = useQuery({
+    queryKey: ['users'],
+    queryFn: api.getMasterUsers
+  });
+
+  const getRoleById = (id: number) => roles.find((r) => r.id === id);
 
   const filtered = users.filter((u) => {
     const matchSearch =
       u.name.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase());
-    const matchRole = filterRole === "all" || u.roleId === filterRole;
+    const matchRole = filterRole === "all" || u.role_id.toString() === filterRole;
     return matchSearch && matchRole;
+  });
+
+  // Mutations
+  const mutateUser = useMutation({
+    mutationFn: (data: Partial<MasterUser> & { password?: string }) =>
+      editUser ? api.updateMasterUser(editUser.id, data) : api.createMasterUser(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({ title: editUser ? "User updated" : "User created", description: `${userForm.name}'s profile has been saved.` });
+      setUserDialogOpen(false);
+    },
+    onError: (err) => toast({ title: "Error", description: err.message, variant: "destructive" })
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: api.deleteMasterUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({ title: "User removed", description: `User has been removed.`, variant: "destructive" });
+      setDeleteUserTarget(null);
+    },
+    onError: (err) => toast({ title: "Error", description: err.message, variant: "destructive" })
+  });
+
+  const mutateRole = useMutation({
+    mutationFn: (data: Partial<MasterRole>) =>
+      editRole ? api.updateMasterRole(editRole.id, data) : api.createMasterRole(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      toast({ title: editRole ? "Role updated" : "Role created", description: `${roleForm.name} has been saved.` });
+      setRoleDialogOpen(false);
+    },
+    onError: (err) => toast({ title: "Error", description: err.message, variant: "destructive" })
+  });
+
+  const deleteRole = useMutation({
+    mutationFn: api.deleteMasterRole,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      toast({ title: "Role deleted", description: `Role has been removed.`, variant: "destructive" });
+      setDeleteRoleTarget(null);
+    },
+    onError: (err) => toast({ title: "Error", description: err.message, variant: "destructive" })
   });
 
   // User handlers
@@ -118,43 +172,37 @@ const Users = () => {
     setUserDialogOpen(true);
   };
 
-  const openEditUser = (u: User) => {
+  const openEditUser = (u: MasterUser) => {
     setEditUser(u);
-    setUserForm({ name: u.name, email: u.email, roleId: u.roleId, status: u.status });
+    setUserForm({ name: u.name, email: u.email, roleId: u.role_id?.toString() || "", status: u.is_active ? "active" : "inactive", password: "" });
     setUserDialogOpen(true);
   };
 
   const handleSaveUser = () => {
-    if (!userForm.name || !userForm.email) {
-      toast({ title: "Missing fields", description: "Name and email are required.", variant: "destructive" });
+    if (!userForm.name || !userForm.email || !userForm.roleId) {
+      toast({ title: "Missing fields", description: "Name, email, and role are required.", variant: "destructive" });
       return;
     }
-    if (editUser) {
-      setUsers((prev) => prev.map((u) => u.id === editUser.id ? { ...u, ...userForm } : u));
-      toast({ title: "User updated", description: `${userForm.name}'s profile has been saved.` });
-    } else {
-      const initials = userForm.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-      const newUser: User = { id: Date.now().toString(), ...userForm, lastLogin: "Never", initials };
-      setUsers((prev) => [...prev, newUser]);
-      toast({ title: "User invited", description: `Invitation sent to ${userForm.email}.` });
-    }
-    setUserDialogOpen(false);
+    mutateUser.mutate({
+      name: userForm.name,
+      email: userForm.email,
+      role_id: parseInt(userForm.roleId),
+      is_active: userForm.status === "active" ? 1 : 0,
+      ...(userForm.password && { password_hash: userForm.password })
+    });
   };
 
   const handleDeleteUser = () => {
     if (!deleteUserTarget) return;
-    setUsers((prev) => prev.filter((u) => u.id !== deleteUserTarget.id));
-    toast({ title: "User removed", description: `${deleteUserTarget.name} has been removed.`, variant: "destructive" });
-    setDeleteUserTarget(null);
+    deleteUser.mutate(deleteUserTarget.id);
   };
 
-  const handleResetPassword = (u: User) => {
-    toast({ title: "Password reset sent", description: `Reset link emailed to ${u.email}.` });
+  const handleResetPassword = (u: MasterUser) => {
+    toast({ title: "Password reset", description: `In a real app, this would send an email to ${u.email}.` });
   };
 
-  const handleToggleStatus = (u: User) => {
-    setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, status: x.status === "active" ? "inactive" : "active" } : x));
-    toast({ title: `User ${u.status === "active" ? "deactivated" : "activated"}`, description: `${u.name} is now ${u.status === "active" ? "inactive" : "active"}.` });
+  const handleToggleStatus = (u: MasterUser) => {
+    mutateUser.mutate({ ...u, is_active: u.is_active ? 0 : 1 });
   };
 
   // Role handlers
@@ -164,9 +212,10 @@ const Users = () => {
     setRoleDialogOpen(true);
   };
 
-  const openEditRole = (r: Role) => {
+  const openEditRole = (r: MasterRole) => {
     setEditRole(r);
-    setRoleForm({ name: r.name, description: r.description, color: r.color, permissions: [...r.permissions] });
+    // Use first color option as fallback since we eliminated color field from backend for simplicity
+    setRoleForm({ name: r.name, description: r.description, color: colorOptions[0].value, permissions: r.permissions as PermissionKey[] });
     setRoleDialogOpen(true);
   };
 
@@ -175,28 +224,23 @@ const Users = () => {
       toast({ title: "Missing fields", description: "Role name is required.", variant: "destructive" });
       return;
     }
-    if (editRole) {
-      setRoles((prev) => prev.map((r) => r.id === editRole.id ? { ...r, ...roleForm } : r));
-      toast({ title: "Role updated", description: `${roleForm.name} has been saved.` });
-    } else {
-      const newRole: Role = { id: Date.now().toString(), name: roleForm.name, description: roleForm.description, color: roleForm.color, permissions: roleForm.permissions };
-      setRoles((prev) => [...prev, newRole]);
-      toast({ title: "Role created", description: `${roleForm.name} has been added.` });
-    }
-    setRoleDialogOpen(false);
+    mutateRole.mutate({
+      name: roleForm.name,
+      description: roleForm.description,
+      permissions: roleForm.permissions,
+      is_active: 1
+    });
   };
 
   const handleDeleteRole = () => {
     if (!deleteRoleTarget) return;
-    const usersWithRole = users.filter(u => u.roleId === deleteRoleTarget.id);
+    const usersWithRole = users.filter((u) => u.role_id === deleteRoleTarget.id);
     if (usersWithRole.length > 0) {
       toast({ title: "Cannot delete", description: `${usersWithRole.length} users have this role. Reassign them first.`, variant: "destructive" });
       setDeleteRoleTarget(null);
       return;
     }
-    setRoles((prev) => prev.filter((r) => r.id !== deleteRoleTarget.id));
-    toast({ title: "Role deleted", description: `${deleteRoleTarget.name} has been removed.`, variant: "destructive" });
-    setDeleteRoleTarget(null);
+    deleteRole.mutate(deleteRoleTarget.id);
   };
 
   const togglePermission = (perm: PermissionKey) => {
@@ -219,7 +263,7 @@ const Users = () => {
     }));
   };
 
-  const roleCount = (roleId: string) => users.filter((u) => u.roleId === roleId).length;
+  const roleCount = (roleId: number) => users.filter((u) => u.role_id === roleId).length;
 
   return (
     <>
@@ -233,10 +277,14 @@ const Users = () => {
 
           {/* Users Tab */}
           <TabsContent value="users" className="space-y-6">
-            {/* Role overview cards */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 relative">
+              {rolesLoading && (
+                <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10 backdrop-blur-sm rounded-lg">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                </div>
+              )}
               {roles.map((role) => (
-                <div key={role.id} className="bg-card rounded-lg border border-border p-3 space-y-1 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setFilterRole(filterRole === role.id ? "all" : role.id)}>
+                <div key={role.id} className="bg-card rounded-lg border border-border p-3 space-y-1 cursor-pointer hover:border-primary/50 transition-colors" onClick={() => setFilterRole(filterRole === role.id.toString() ? "all" : role.id.toString())}>
                   <p className="text-xs text-muted-foreground font-medium leading-tight">{role.name}</p>
                   <p className="text-2xl font-bold text-card-foreground">{roleCount(role.id)}</p>
                 </div>
@@ -254,7 +302,7 @@ const Users = () => {
                   <SelectTrigger className="w-44 h-9"><SelectValue placeholder="All roles" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
-                    {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                    {roles.map((r) => <SelectItem key={r.id} value={r.id.toString()}>{r.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -264,26 +312,32 @@ const Users = () => {
             </div>
 
             {/* Users Table */}
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <div className="bg-card rounded-lg border border-border overflow-hidden relative min-h-[400px]">
+              {usersLoading && (
+                <div className="absolute inset-0 bg-background/50 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+                  <p className="text-sm text-muted-foreground font-medium">Loading users...</p>
+                </div>
+              )}
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">User</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Role</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider">Status</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-wider">Last Login</TableHead>
                     <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map((user) => {
-                    const role = getRoleById(user.roleId);
+                    const role = getRoleById(user.role_id);
+                    const initials = user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
                     return (
                       <TableRow key={user.id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
-                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{user.initials}</AvatarFallback>
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">{initials}</AvatarFallback>
                             </Avatar>
                             <div>
                               <p className="text-sm font-medium text-card-foreground">{user.name}</p>
@@ -292,21 +346,19 @@ const Users = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={`text-xs font-medium ${role?.color || ''}`}>
+                          <Badge variant="outline" className={`text-xs font-medium ${roleOptionsColor(role?.id)}`}>
                             <Shield className="w-3 h-3 mr-1" />{role?.name || 'Unknown'}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full border ${
-                            user.status === "active"
-                              ? "bg-success/10 text-success border-success/30"
-                              : "bg-muted text-muted-foreground border-border"
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${user.status === "active" ? "bg-success" : "bg-muted-foreground"}`} />
-                            {user.status === "active" ? "Active" : "Inactive"}
+                          <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full border ${user.is_active
+                            ? "bg-success/10 text-success border-success/30"
+                            : "bg-muted text-muted-foreground border-border"
+                            }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${user.is_active ? "bg-success" : "bg-muted-foreground"}`} />
+                            {user.is_active ? "Active" : "Inactive"}
                           </span>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{user.lastLogin}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -323,7 +375,7 @@ const Users = () => {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
                                 <UserCheck className="w-3.5 h-3.5 mr-2" />
-                                {user.status === "active" ? "Deactivate" : "Activate"}
+                                {user.is_active ? "Deactivate" : "Activate"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onClick={() => setDeleteUserTarget(user)} className="text-destructive focus:text-destructive">
@@ -335,8 +387,8 @@ const Users = () => {
                       </TableRow>
                     );
                   })}
-                  {filtered.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-10">No users found</TableCell></TableRow>
+                  {!usersLoading && filtered.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-10">No users found</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -352,12 +404,18 @@ const Users = () => {
               </Button>
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid gap-4 relative min-h-[200px]">
+              {rolesLoading && (
+                <div className="absolute inset-0 bg-background/50 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+                  <p className="text-sm text-muted-foreground font-medium">Loading roles...</p>
+                </div>
+              )}
               {roles.map((role) => (
                 <div key={role.id} className="bg-card rounded-lg border border-border p-5">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline" className={`text-sm font-medium ${role.color}`}>
+                      <Badge variant="outline" className={`text-sm font-medium ${roleOptionsColor(role.id)}`}>
                         <Shield className="w-3.5 h-3.5 mr-1.5" />{role.name}
                       </Badge>
                       <span className="text-xs text-muted-foreground">{role.description}</span>
@@ -373,15 +431,15 @@ const Users = () => {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {MODULES.filter(m => ACTIONS.some(a => role.permissions.includes(`${m}:${a}` as PermissionKey))).map((mod) => {
-                      const modActions = ACTIONS.filter(a => role.permissions.includes(`${mod}:${a}` as PermissionKey));
+                    {MODULES.filter(m => ACTIONS.some(a => role.permissions?.includes(`${m}:${a}` as PermissionKey))).map((mod) => {
+                      const modActions = ACTIONS.filter(a => role.permissions?.includes(`${mod}:${a}` as PermissionKey));
                       return (
                         <span key={mod} className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground">
                           {mod}: {modActions.join(", ")}
                         </span>
                       );
                     })}
-                    {role.permissions.length === 0 && (
+                    {(!role.permissions || role.permissions.length === 0) && (
                       <span className="text-xs text-muted-foreground italic">No permissions assigned</span>
                     )}
                   </div>
@@ -408,12 +466,11 @@ const Users = () => {
                         <td className="py-2 pr-4 font-medium text-card-foreground">{mod}</td>
                         {ACTIONS.map((action) => {
                           const key = `${mod}:${action}` as PermissionKey;
-                          const hasAny = roles.some(r => r.permissions.includes(key));
                           return (
                             <td key={action} className="text-center py-2 px-2">
-                              <div className="flex justify-center gap-1">
-                                {roles.map(r => (
-                                  <span key={r.id} title={r.name} className={`w-2 h-2 rounded-full ${r.permissions.includes(key) ? "bg-success" : "bg-muted"}`} />
+                              <div className="flex justify-center gap-1 flex-wrap max-w-24 mx-auto">
+                                {roles.filter(r => r.permissions?.includes(key)).map(r => (
+                                  <span key={r.id} title={r.name} className="w-2 h-2 rounded-full bg-success" />
                                 ))}
                               </div>
                             </td>
@@ -449,10 +506,16 @@ const Users = () => {
               <Select value={userForm.roleId} onValueChange={(v) => setUserForm({ ...userForm, roleId: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {roles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                  {roles.map((r) => <SelectItem key={r.id} value={r.id.toString()}>{r.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+            {!editUser && (
+              <div className="space-y-2">
+                <Label>Password</Label>
+                <Input type="password" placeholder="Temporary password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} />
+              </div>
+            )}
             {editUser && (
               <div className="space-y-2">
                 <Label>Status</Label>
@@ -467,8 +530,11 @@ const Users = () => {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUserDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveUser}>{editUser ? "Save Changes" : "Send Invite"}</Button>
+            <Button variant="outline" onClick={() => setUserDialogOpen(false)} disabled={mutateUser.isPending}>Cancel</Button>
+            <Button onClick={handleSaveUser} disabled={mutateUser.isPending}>
+              {mutateUser.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {editUser ? "Save Changes" : "Create User"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -483,8 +549,11 @@ const Users = () => {
             Are you sure you want to remove <strong>{deleteUserTarget?.name}</strong>? This action cannot be undone.
           </p>
           <DialogFooter className="mt-2">
-            <Button variant="outline" onClick={() => setDeleteUserTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteUser}>Remove</Button>
+            <Button variant="outline" onClick={() => setDeleteUserTarget(null)} disabled={deleteUser.isPending}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteUser} disabled={deleteUser.isPending}>
+              {deleteUser.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Remove
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -539,8 +608,11 @@ const Users = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRoleDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveRole}>{editRole ? "Save Changes" : "Create Role"}</Button>
+            <Button variant="outline" onClick={() => setRoleDialogOpen(false)} disabled={mutateRole.isPending}>Cancel</Button>
+            <Button onClick={handleSaveRole} disabled={mutateRole.isPending}>
+              {mutateRole.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {editRole ? "Save Changes" : "Create Role"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -555,13 +627,22 @@ const Users = () => {
             Are you sure you want to delete <strong>{deleteRoleTarget?.name}</strong>? Users with this role will need to be reassigned.
           </p>
           <DialogFooter className="mt-2">
-            <Button variant="outline" onClick={() => setDeleteRoleTarget(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteRole}>Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteRoleTarget(null)} disabled={deleteRole.isPending}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteRole} disabled={deleteRole.isPending}>
+              {deleteRole.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
   );
 };
+
+// Helper for generic role colors
+function roleOptionsColor(id?: number) {
+  if (!id) return colorOptions[0].value;
+  return colorOptions[id % colorOptions.length].value;
+}
 
 export default Users;

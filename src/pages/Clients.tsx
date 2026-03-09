@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AppHeader from "@/components/layout/AppHeader";
 import StatusBadge from "@/components/shared/StatusBadge";
-import { companies } from "@/data/mockData";
+import { api } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Search, Plus, Download, Filter } from "lucide-react";
+import { Search, Plus, Download, Filter, Loader2 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -25,15 +26,38 @@ const Clients = () => {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", city: "", product: "Tour CRM", gst: "" });
+  const [form, setForm] = useState({ name: "", city: "", product: "Tour CRM", code: "" });
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: companies = [], isLoading, error } = useQuery({
+    queryKey: ['companies'],
+    queryFn: api.getCompanies
+  });
+
+  const createCompany = useMutation({
+    mutationFn: api.createCompany,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast({ title: "Client added", description: `${form.name} has been added successfully.` });
+      setAddOpen(false);
+      setForm({ name: "", city: "", product: "Tour CRM", code: "" });
+    },
+    onError: (err) => {
+      toast({ title: "Failed to add client", description: err.message, variant: "destructive" });
+    }
+  });
 
   const filtered = companies.filter((c) => {
+    // Backend doesn't have city directly right now, simulate it from mock or base it on name for search
     const matchSearch =
       c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.city.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus.length === 0 || filterStatus.includes(c.status);
+      c.code?.toLowerCase().includes(search.toLowerCase());
+
+    // Map is_active to a status string for compatibility with StatusBadge
+    const status = c.is_active ? "active" : "inactive";
+    const matchStatus = filterStatus.length === 0 || filterStatus.includes(status);
     return matchSearch && matchStatus;
   });
 
@@ -41,19 +65,21 @@ const Clients = () => {
     setFilterStatus((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
 
   const handleAdd = () => {
-    if (!form.name || !form.city) {
-      toast({ title: "Missing fields", description: "Company name and city are required.", variant: "destructive" });
+    if (!form.name || !form.code) {
+      toast({ title: "Missing fields", description: "Company name and code are required.", variant: "destructive" });
       return;
     }
-    toast({ title: "Client added", description: `${form.name} has been added successfully.` });
-    setAddOpen(false);
-    setForm({ name: "", city: "", product: "Tour CRM", gst: "" });
+    createCompany.mutate({
+      name: form.name,
+      code: form.code,
+      is_active: 1
+    });
   };
 
   const handleExport = () => {
     const csv = [
-      ["Name", "City", "Product", "Status", "MRR"].join(","),
-      ...filtered.map((c) => [c.name, c.city, c.product, c.status, c.mrr].join(",")),
+      ["ID", "Name", "Code", "Status"].join(","),
+      ...filtered.map((c) => [c.id, c.name, c.code, c.is_active ? "active" : "inactive"].join(",")),
     ].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -61,15 +87,19 @@ const Clients = () => {
     toast({ title: "Export started", description: "clients.csv is downloading." });
   };
 
+  if (error) {
+    return <div className="p-6 text-destructive">Error loading companies: {(error as Error).message}</div>;
+  }
+
   return (
     <>
-      <AppHeader title="Clients" subtitle={`${companies.length} companies`} />
+      <AppHeader title="Clients" subtitle={`${isLoading ? '...' : companies.length} companies`} />
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or city..."
+              placeholder="Search by name or code..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-9"
@@ -84,7 +114,7 @@ const Clients = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
-                {["active", "expiring", "expired", "cancelled"].map((s) => (
+                {["active", "inactive"].map((s) => (
                   <DropdownMenuCheckboxItem
                     key={s}
                     checked={filterStatus.includes(s)}
@@ -103,35 +133,52 @@ const Clients = () => {
           </div>
         </div>
 
-        <div className="bg-card rounded-lg border border-border overflow-hidden">
+        <div className="bg-card rounded-lg border border-border overflow-hidden relative min-h-[400px]">
+          {isLoading && (
+            <div className="absolute inset-0 bg-background/50 flex flex-col items-center justify-center z-10 backdrop-blur-sm">
+              <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+              <p className="text-sm text-muted-foreground font-medium">Loading companies...</p>
+            </div>
+          )}
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-xs font-semibold uppercase tracking-wider">Company</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wider">City</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wider">Product</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wider">Contacts</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider">Company Code</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider">Created</TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wider">Status</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">MRR</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map((company) => (
-                <TableRow key={company.id} className="cursor-pointer" onClick={() => navigate(`/clients/${company.id}`)}>
-                  <TableCell className="font-medium text-sm">{company.name}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{company.city}</TableCell>
+                <TableRow key={company.id} className="cursor-pointer hover:bg-muted/50 transition-colors">
                   <TableCell>
-                    <span className="text-xs font-medium bg-secondary px-2 py-0.5 rounded">{company.product}</span>
+                    <div className="flex items-center gap-3">
+                      {company.logo_url ? (
+                        <img src={company.logo_url} alt={company.name} className="w-8 h-8 rounded-full border border-border bg-card" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs border border-primary/20">
+                          {company.name.substring(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="font-medium text-sm text-card-foreground">{company.name}</span>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{company.contacts}</TableCell>
-                  <TableCell><StatusBadge status={company.status} /></TableCell>
+                  <TableCell className="text-sm font-medium text-muted-foreground">{company.code || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {new Date(company.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell><StatusBadge status={company.is_active ? "active" : "inactive"} /></TableCell>
                   <TableCell className="text-sm font-medium text-right">
-                    {company.mrr > 0 ? `₹${company.mrr.toLocaleString("en-IN")}` : "—"}
+                    <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/clients/${company.id}`); }}>
+                      View Details
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-10">No clients found</TableCell></TableRow>
+              {!isLoading && filtered.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-10">No clients found in the database</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -142,23 +189,23 @@ const Clients = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader><DialogTitle>Add New Company</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-2"><Label>Company Name</Label><Input placeholder="e.g. TravelMax India" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-            <div className="space-y-2"><Label>City</Label><Input placeholder="e.g. Bangalore" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
             <div className="space-y-2">
-              <Label>Product</Label>
-              <Select value={form.product} onValueChange={(v) => setForm({ ...form, product: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Tour CRM">Tour CRM</SelectItem>
-                  <SelectItem value="Travel CRM">Travel CRM</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Company Name</Label>
+              <Input placeholder="e.g. TravelMax India" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
-            <div className="space-y-2"><Label>GST Number (optional)</Label><Input placeholder="e.g. 29AADCT1234A1Z5" value={form.gst} onChange={(e) => setForm({ ...form, gst: e.target.value })} /></div>
+            <div className="space-y-2">
+              <Label>Company Code</Label>
+              <Input placeholder="e.g. TMI-01" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+              <p className="text-xs text-muted-foreground">Unique identifier, like a slug.</p>
+            </div>
+
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
-            <Button onClick={handleAdd}>Add Company</Button>
+            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={createCompany.isPending}>Cancel</Button>
+            <Button onClick={handleAdd} disabled={createCompany.isPending}>
+              {createCompany.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save Company
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
