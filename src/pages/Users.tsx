@@ -355,12 +355,13 @@ const Users = () => {
             <div className="grid gap-4">
               {roles.map((role) => (
                 <div key={role.id} className="bg-card rounded-lg border border-border p-5">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <Badge variant="outline" className={`text-sm font-medium ${role.color}`}>
                         <Shield className="w-3.5 h-3.5 mr-1.5" />{role.name}
                       </Badge>
-                      <span className="text-sm text-muted-foreground">{roleCount(role.id)} users</span>
+                      <span className="text-xs text-muted-foreground">{role.description}</span>
+                      <span className="text-xs text-muted-foreground">· {roleCount(role.id)} users</span>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEditRole(role)}>
@@ -371,13 +372,18 @@ const Users = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {role.permissions.length > 0 ? (
-                      role.permissions.map((perm) => (
-                        <span key={perm} className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground">{perm}</span>
-                      ))
-                    ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {MODULES.filter(m => ACTIONS.some(a => role.permissions.includes(`${m}:${a}` as PermissionKey))).map((mod) => {
+                      const modActions = ACTIONS.filter(a => role.permissions.includes(`${mod}:${a}` as PermissionKey));
+                      return (
+                        <span key={mod} className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground">
+                          {mod}: {modActions.join(", ")}
+                        </span>
+                      );
+                    })}
+                    {role.permissions.length === 0 && (
                       <span className="text-xs text-muted-foreground italic">No permissions assigned</span>
+                    )}
                     )}
                   </div>
                 </div>
