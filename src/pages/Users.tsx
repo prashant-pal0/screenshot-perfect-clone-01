@@ -384,7 +384,6 @@ const Users = () => {
                     {role.permissions.length === 0 && (
                       <span className="text-xs text-muted-foreground italic">No permissions assigned</span>
                     )}
-                    )}
                   </div>
                 </div>
               ))}
