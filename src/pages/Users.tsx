@@ -22,30 +22,34 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, MoreHorizontal, Shield, Edit, Trash2, KeyRound, UserCheck, Settings2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const PERMISSIONS = [
-  "View Clients", "Add/Edit Clients", "Delete Clients",
-  "View Invoices", "Create Invoices", "Edit Invoices",
-  "View Pipeline", "Manage Pipeline",
-  "View Tickets", "Manage Tickets",
-  "Manage Users", "View Reports", "System Settings"
+const MODULES = [
+  "Dashboard", "Clients", "Invoices", "Pipeline", "Tickets",
+  "Subscriptions", "Renewals", "Reports", "Users", "Settings"
 ] as const;
 
-type Permission = typeof PERMISSIONS[number];
+const ACTIONS = ["View", "Create", "Edit", "Delete"] as const;
+
+type Module = typeof MODULES[number];
+type Action = typeof ACTIONS[number];
+type PermissionKey = `${Module}:${Action}`;
 
 interface Role {
   id: string;
   name: string;
+  description: string;
   color: string;
-  permissions: Permission[];
+  permissions: PermissionKey[];
 }
 
+const allPerms = (): PermissionKey[] => MODULES.flatMap(m => ACTIONS.map(a => `${m}:${a}` as PermissionKey));
+
 const initialRoles: Role[] = [
-  { id: "1", name: "Super Admin", color: "bg-destructive/10 text-destructive border-destructive/30", permissions: [...PERMISSIONS] },
-  { id: "2", name: "Sales Manager", color: "bg-primary/10 text-primary border-primary/30", permissions: ["View Clients", "Add/Edit Clients", "View Invoices", "View Pipeline", "Manage Pipeline", "View Reports"] },
-  { id: "3", name: "Sales Rep", color: "bg-info/10 text-info border-info/30", permissions: ["View Clients", "Add/Edit Clients", "View Pipeline"] },
-  { id: "4", name: "Finance", color: "bg-warning/10 text-warning border-warning/30", permissions: ["View Clients", "View Invoices", "Create Invoices", "Edit Invoices", "View Reports"] },
-  { id: "5", name: "Support Manager", color: "bg-success/10 text-success border-success/30", permissions: ["View Clients", "View Tickets", "Manage Tickets", "View Reports"] },
-  { id: "6", name: "Support Agent", color: "bg-secondary text-secondary-foreground border-border", permissions: ["View Clients", "View Tickets", "Manage Tickets"] },
+  { id: "1", name: "Super Admin", description: "Full system access", color: "bg-destructive/10 text-destructive border-destructive/30", permissions: allPerms() },
+  { id: "2", name: "Sales Manager", description: "Manages sales team & pipeline", color: "bg-primary/10 text-primary border-primary/30", permissions: ["Dashboard:View", "Clients:View", "Clients:Create", "Clients:Edit", "Invoices:View", "Pipeline:View", "Pipeline:Create", "Pipeline:Edit", "Reports:View"] },
+  { id: "3", name: "Sales Rep", description: "Handles leads & clients", color: "bg-info/10 text-info border-info/30", permissions: ["Dashboard:View", "Clients:View", "Clients:Create", "Clients:Edit", "Pipeline:View", "Pipeline:Create", "Pipeline:Edit"] },
+  { id: "4", name: "Finance", description: "Invoice & billing management", color: "bg-warning/10 text-warning border-warning/30", permissions: ["Dashboard:View", "Clients:View", "Invoices:View", "Invoices:Create", "Invoices:Edit", "Subscriptions:View", "Renewals:View", "Reports:View"] },
+  { id: "5", name: "Support Manager", description: "Manages support team", color: "bg-success/10 text-success border-success/30", permissions: ["Dashboard:View", "Clients:View", "Tickets:View", "Tickets:Create", "Tickets:Edit", "Tickets:Delete", "Reports:View"] },
+  { id: "6", name: "Support Agent", description: "Handles customer tickets", color: "bg-secondary text-secondary-foreground border-border", permissions: ["Dashboard:View", "Clients:View", "Tickets:View", "Tickets:Create", "Tickets:Edit"] },
 ];
 
 const colorOptions = [
@@ -78,7 +82,7 @@ const initialUsers: User[] = [
 ];
 
 const emptyUserForm = { name: "", email: "", roleId: "3", status: "active" as "active" | "inactive" };
-const emptyRoleForm = { name: "", color: colorOptions[0].value, permissions: [] as Permission[] };
+const emptyRoleForm = { name: "", description: "", color: colorOptions[0].value, permissions: [] as PermissionKey[] };
 
 const Users = () => {
   const [roles, setRoles] = useState<Role[]>(initialRoles);
@@ -162,7 +166,7 @@ const Users = () => {
 
   const openEditRole = (r: Role) => {
     setEditRole(r);
-    setRoleForm({ name: r.name, color: r.color, permissions: [...r.permissions] });
+    setRoleForm({ name: r.name, description: r.description, color: r.color, permissions: [...r.permissions] });
     setRoleDialogOpen(true);
   };
 
@@ -175,7 +179,7 @@ const Users = () => {
       setRoles((prev) => prev.map((r) => r.id === editRole.id ? { ...r, ...roleForm } : r));
       toast({ title: "Role updated", description: `${roleForm.name} has been saved.` });
     } else {
-      const newRole: Role = { id: Date.now().toString(), ...roleForm };
+      const newRole: Role = { id: Date.now().toString(), name: roleForm.name, description: roleForm.description, color: roleForm.color, permissions: roleForm.permissions };
       setRoles((prev) => [...prev, newRole]);
       toast({ title: "Role created", description: `${roleForm.name} has been added.` });
     }
@@ -195,12 +199,23 @@ const Users = () => {
     setDeleteRoleTarget(null);
   };
 
-  const togglePermission = (perm: Permission) => {
+  const togglePermission = (perm: PermissionKey) => {
     setRoleForm(prev => ({
       ...prev,
       permissions: prev.permissions.includes(perm)
         ? prev.permissions.filter(p => p !== perm)
         : [...prev.permissions, perm]
+    }));
+  };
+
+  const toggleModuleAll = (mod: Module) => {
+    const modPerms = ACTIONS.map(a => `${mod}:${a}` as PermissionKey);
+    const allChecked = modPerms.every(p => roleForm.permissions.includes(p));
+    setRoleForm(prev => ({
+      ...prev,
+      permissions: allChecked
+        ? prev.permissions.filter(p => !modPerms.includes(p))
+        : [...new Set([...prev.permissions, ...modPerms])]
     }));
   };
 
@@ -340,12 +355,13 @@ const Users = () => {
             <div className="grid gap-4">
               {roles.map((role) => (
                 <div key={role.id} className="bg-card rounded-lg border border-border p-5">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <Badge variant="outline" className={`text-sm font-medium ${role.color}`}>
                         <Shield className="w-3.5 h-3.5 mr-1.5" />{role.name}
                       </Badge>
-                      <span className="text-sm text-muted-foreground">{roleCount(role.id)} users</span>
+                      <span className="text-xs text-muted-foreground">{role.description}</span>
+                      <span className="text-xs text-muted-foreground">· {roleCount(role.id)} users</span>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEditRole(role)}>
@@ -356,12 +372,16 @@ const Users = () => {
                       </Button>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {role.permissions.length > 0 ? (
-                      role.permissions.map((perm) => (
-                        <span key={perm} className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground">{perm}</span>
-                      ))
-                    ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {MODULES.filter(m => ACTIONS.some(a => role.permissions.includes(`${m}:${a}` as PermissionKey))).map((mod) => {
+                      const modActions = ACTIONS.filter(a => role.permissions.includes(`${mod}:${a}` as PermissionKey));
+                      return (
+                        <span key={mod} className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground">
+                          {mod}: {modActions.join(", ")}
+                        </span>
+                      );
+                    })}
+                    {role.permissions.length === 0 && (
                       <span className="text-xs text-muted-foreground italic">No permissions assigned</span>
                     )}
                   </div>
@@ -378,21 +398,27 @@ const Users = () => {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left font-semibold text-muted-foreground py-2 pr-4">Permission</th>
-                      {roles.map((r) => <th key={r.id} className="text-center font-semibold text-muted-foreground py-2 px-2 whitespace-nowrap">{r.name}</th>)}
+                      <th className="text-left font-semibold text-muted-foreground py-2 pr-4">Module</th>
+                      {ACTIONS.map(a => <th key={a} className="text-center font-semibold text-muted-foreground py-2 px-2">{a}</th>)}
                     </tr>
                   </thead>
                   <tbody>
-                    {PERMISSIONS.map((perm) => (
-                      <tr key={perm} className="border-b border-border/50 last:border-0">
-                        <td className="py-2 pr-4 font-medium text-card-foreground">{perm}</td>
-                        {roles.map((r) => (
-                          <td key={r.id} className="text-center py-2 px-2">
-                            {r.permissions.includes(perm)
-                              ? <span className="text-success font-bold">✓</span>
-                              : <span className="text-muted-foreground/40">—</span>}
-                          </td>
-                        ))}
+                    {MODULES.map((mod) => (
+                      <tr key={mod} className="border-b border-border/50 last:border-0">
+                        <td className="py-2 pr-4 font-medium text-card-foreground">{mod}</td>
+                        {ACTIONS.map((action) => {
+                          const key = `${mod}:${action}` as PermissionKey;
+                          const hasAny = roles.some(r => r.permissions.includes(key));
+                          return (
+                            <td key={action} className="text-center py-2 px-2">
+                              <div className="flex justify-center gap-1">
+                                {roles.map(r => (
+                                  <span key={r.id} title={r.name} className={`w-2 h-2 rounded-full ${r.permissions.includes(key) ? "bg-success" : "bg-muted"}`} />
+                                ))}
+                              </div>
+                            </td>
+                          );
+                        })}
                       </tr>
                     ))}
                   </tbody>
@@ -465,45 +491,50 @@ const Users = () => {
 
       {/* Add/Edit Role Dialog */}
       <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editRole ? "Edit Role" : "Create New Role"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Role Name</Label>
-              <Input placeholder="e.g. Marketing Manager" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Role Name</Label>
+                <Input placeholder="e.g. Marketing Manager" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input placeholder="Role for Marketing Manager" value={roleForm.description} onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })} />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Badge Color</Label>
-              <Select value={roleForm.color} onValueChange={(v) => setRoleForm({ ...roleForm, color: v })}>
-                <SelectTrigger>
-                  <SelectValue>
-                    <Badge variant="outline" className={roleForm.color}>Preview</Badge>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {colorOptions.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      <Badge variant="outline" className={c.value}>{c.label}</Badge>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Permissions</Label>
-              <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 border border-border rounded-md">
-                {PERMISSIONS.map((perm) => (
-                  <div key={perm} className="flex items-center gap-2">
-                    <Checkbox
-                      id={perm}
-                      checked={roleForm.permissions.includes(perm)}
-                      onCheckedChange={() => togglePermission(perm)}
-                    />
-                    <label htmlFor={perm} className="text-xs text-card-foreground cursor-pointer">{perm}</label>
-                  </div>
-                ))}
+              <Label className="text-sm font-semibold">Permissions</Label>
+              <div className="border border-border rounded-md overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-muted/50 border-b border-border">
+                      <th className="text-left font-semibold text-muted-foreground py-2.5 px-3">Module</th>
+                      {ACTIONS.map(a => <th key={a} className="text-center font-semibold text-muted-foreground py-2.5 px-3">{a}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {MODULES.map((mod) => (
+                      <tr key={mod} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
+                        <td className="py-2.5 px-3 font-medium text-card-foreground">{mod}</td>
+                        {ACTIONS.map((action) => {
+                          const key = `${mod}:${action}` as PermissionKey;
+                          return (
+                            <td key={action} className="text-center py-2.5 px-3">
+                              <Checkbox
+                                checked={roleForm.permissions.includes(key)}
+                                onCheckedChange={() => togglePermission(key)}
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
