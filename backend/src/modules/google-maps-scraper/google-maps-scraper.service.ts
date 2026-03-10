@@ -53,6 +53,7 @@ export interface GoogleMapLead {
   placeId: string | null;
   clickId: string | null;
   clickMetadata: string | null;
+  status: string;
 }
 
 @Injectable()
@@ -66,7 +67,7 @@ export class GoogleMapsScraperService {
     private readonly scrapedListRepository: Repository<ScrapedList>,
     @InjectRepository(ScrapedLead)
     private readonly scrapedLeadRepository: Repository<ScrapedLead>,
-  ) {}
+  ) { }
 
   // =========================================================
   // SLUGIFY (Helper for code generation)
@@ -144,13 +145,14 @@ export class GoogleMapsScraperService {
   async parseLeadsFromFile(
     filePath: string,
     utm: UtmConfig = DEFAULT_UTM,
+    status: string = 'new',
   ): Promise<GoogleMapLead[]> {
     const absolutePath = path.resolve(filePath);
     if (!fs.existsSync(absolutePath)) {
       throw new Error(`File not found: ${absolutePath}`);
     }
     const html = fs.readFileSync(absolutePath, 'utf-8');
-    return this.parseLeads(html, utm);
+    return this.parseLeads(html, utm, status);
   }
 
   // =========================================================
@@ -184,7 +186,7 @@ export class GoogleMapsScraperService {
   //   <img class="Jn12ke">                                   ← profile image
   // </div>
   // =========================================================
-  parseLeads(html: string, utm: UtmConfig = DEFAULT_UTM): GoogleMapLead[] {
+  parseLeads(html: string, utm: UtmConfig = DEFAULT_UTM, status: string = 'new'): GoogleMapLead[] {
     const $ = cheerio.load(html);
     const leads: GoogleMapLead[] = [];
     this.logger.log(`Parsing HTML of length ${html.length}`);
@@ -339,6 +341,7 @@ export class GoogleMapsScraperService {
             placeId,
             clickId,
             clickMetadata,
+            status,
           });
         }
       } catch (err) {
@@ -361,6 +364,7 @@ export class GoogleMapsScraperService {
     const sheet = workbook.addWorksheet('Google Maps Leads');
 
     sheet.columns = [
+      { header: 'Status', key: 'status', width: 15 },
       { header: 'Name', key: 'name', width: 35 },
       { header: 'Rating', key: 'rating', width: 10 },
       { header: 'Review Count', key: 'reviewCount', width: 15 },
@@ -474,6 +478,7 @@ export class GoogleMapsScraperService {
           place_id: lead.placeId,
           click_id: lead.clickId,
           click_metadata: lead.clickMetadata,
+          status: lead.status || 'new',
         })),
       );
 
@@ -495,8 +500,9 @@ export class GoogleMapsScraperService {
     htmlPath: string,
     outputExcel?: string,
     utm: UtmConfig = DEFAULT_UTM,
+    status: string = 'new',
   ): Promise<{ totalLeads: number; file: string }> {
-    const leads = await this.parseLeadsFromFile(htmlPath, utm);
+    const leads = await this.parseLeadsFromFile(htmlPath, utm, status);
 
     const excelPath =
       outputExcel ||
@@ -516,8 +522,9 @@ export class GoogleMapsScraperService {
     outputExcel?: string,
     utm: UtmConfig = DEFAULT_UTM,
     location: string = 'Direct HTML Scrape',
+    status: string = 'new',
   ): Promise<{ totalLeads: number; file: string }> {
-    const leads = await this.parseLeads(html, utm);
+    const leads = await this.parseLeads(html, utm, status);
 
     const excelPath =
       outputExcel ||

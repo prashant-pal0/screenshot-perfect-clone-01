@@ -6,12 +6,16 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { GoogleMapsScraperService } from './google-maps-scraper.service';
 
+import { IsOptional, IsString } from 'class-validator';
+
 class ParseFileDto {
   @ApiProperty({
     description: 'Path to Google Maps HTML file',
     example: 'google.html',
     required: false,
   })
+  @IsOptional()
+  @IsString()
   filePath?: string;
 
   @ApiProperty({
@@ -19,6 +23,8 @@ class ParseFileDto {
     example: '<html>...</html>',
     required: false,
   })
+  @IsOptional()
+  @IsString()
   html?: string;
 
   @ApiProperty({
@@ -26,7 +32,18 @@ class ParseFileDto {
     example: 'New York Restaurants',
     required: false,
   })
+  @IsOptional()
+  @IsString()
   location?: string;
+
+  @ApiProperty({
+    description: 'Status of the scraped leads',
+    example: 'new',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  status?: string;
 }
 
 @ApiTags('Google Maps Scraper')
@@ -41,7 +58,12 @@ export class GoogleMapsScraperController {
   @ApiOperation({ summary: 'Upload HTML path and download Excel leads' })
   @ApiBody({ type: ParseFileDto })
   async generateExcel(@Body() body: ParseFileDto, @Res() res: ServerResponse) {
-    const result = await this.scraperService.parseHtmlToExcel(body.filePath || 'google.html');
+    const result = await this.scraperService.parseHtmlToExcel(
+      body.filePath || 'google.html',
+      undefined,
+      undefined,
+      body.status || 'new'
+    );
 
     const filePath = path.resolve(result.file);
 
@@ -63,8 +85,9 @@ export class GoogleMapsScraperController {
   @ApiBody({ type: ParseFileDto })
   async scrapeHtml(@Body() body: ParseFileDto, @Res() res: ServerResponse) {
     const location = body.location || 'Direct HTML Scrape';
+    const status = body.status || 'new';
     console.log(body.html);
-    const result = await this.scraperService.scrapeHtmlToExcel(body.html || '', undefined, undefined, location);
+    const result = await this.scraperService.scrapeHtmlToExcel(body.html || '', undefined, undefined, location, status);
 
     const filePath = path.resolve(result.file);
 

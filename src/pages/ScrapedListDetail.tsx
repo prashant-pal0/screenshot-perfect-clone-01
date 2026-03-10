@@ -23,6 +23,7 @@ interface ScrapedLead {
     contact_no: string;
     website: string;
     google_maps_link: string;
+    status: string;
 }
 
 interface ListDetail {
@@ -112,6 +113,7 @@ const ScrapedListDetail = () => {
                             <TableHeader className="bg-muted/50">
                                 <TableRow>
                                     <TableHead className="min-w-[250px] font-semibold">Business Name</TableHead>
+                                    <TableHead className="min-w-[100px] font-semibold">Status</TableHead>
                                     <TableHead className="min-w-[100px] font-semibold"><Star className="w-4 h-4 inline mr-1 text-yellow-500" /> Rating</TableHead>
                                     <TableHead className="min-w-[150px] font-semibold">Category</TableHead>
                                     <TableHead className="min-w-[300px] font-semibold"><MapPin className="w-4 h-4 inline mr-1 text-blue-500" /> Address</TableHead>
@@ -124,6 +126,14 @@ const ScrapedListDetail = () => {
                                     <TableRow key={lead.id} className="hover:bg-muted/30">
                                         <TableCell className="font-medium align-top">
                                             {lead.name}
+                                        </TableCell>
+                                        <TableCell className="align-top">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold capitalize
+                                                ${lead.status?.toLowerCase() === 'hot' ? 'bg-red-100 text-red-700 border border-red-200' :
+                                                    lead.status?.toLowerCase() === 'cold' ? 'bg-blue-100 text-blue-700 border border-blue-200' :
+                                                        'bg-green-100 text-green-700 border border-green-200'}`}>
+                                                {lead.status || 'New'}
+                                            </span>
                                         </TableCell>
                                         <TableCell className="align-top">
                                             {lead.rating ? (

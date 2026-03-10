@@ -8,6 +8,7 @@ import { Zap, Download, Database, Loader2 } from "lucide-react";
 const LeadData = () => {
     const [html, setHtml] = useState("");
     const [location, setLocation] = useState("");
+    const [status, setStatus] = useState("new");
     const [isProcessing, setIsProcessing] = useState(false);
     const [lastResult, setLastResult] = useState<{ totalLeads: number } | null>(null);
     const { toast } = useToast();
@@ -29,7 +30,7 @@ const LeadData = () => {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ html, location }),
+                body: JSON.stringify({ html, location, status }),
             });
 
             if (!response.ok) {
@@ -97,15 +98,27 @@ const LeadData = () => {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium px-1">Source Label / Location (Optional)</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. New York Restaurants, Dubai Real Estate..."
-                                    className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                    value={location}
-                                    onChange={(e) => setLocation(e.target.value)}
-                                />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium px-1">Source Label / Location (Optional)</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. New York Restaurants..."
+                                        className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                        value={location}
+                                        onChange={(e) => setLocation(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium px-1">Lead Status</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. new, hot, cold..."
+                                        className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                        value={status}
+                                        onChange={(e) => setStatus(e.target.value)}
+                                    />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium px-1">HTML Content Payload</label>

@@ -13,6 +13,9 @@ export class ScrapedLead {
     @JoinColumn({ name: 'scraped_list_id' })
     scraped_list: ScrapedList;
 
+    @Column({ type: 'varchar', length: 50, default: 'new' })
+    status: string;
+
     @Column({ type: 'varchar', length: 500, nullable: true })
     name: string | null;
 
